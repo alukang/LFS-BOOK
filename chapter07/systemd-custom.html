@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8" />
+    <title>
+      7.10.&nbsp;Systemd 的用法与配置
+    </title>
+    <link rel="stylesheet" type="text/css" href="../stylesheets/lfs.css" />
+    <meta name="generator" content="DocBook XSL Stylesheets V1.78.1" />
+    <link rel="stylesheet" href="../stylesheets/lfs-print.css" type=
+    "text/css" media="print" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body class="lfs" id="lfs-8.0-rc1-systemd">
+    <div class="navheader">
+      <h4>
+        Linux From Scratch 中文版 - Version 8.0-rc1-systemd
+      </h4>
+      <h3>
+        第&nbsp;7&nbsp;章&nbsp;基本系统配置
+      </h3>
+      <ul>
+        <li class="prev">
+          <a accesskey="p" href="etcshells.html" title=
+          "创建 /etc/shells 文件">上一页</a>
+          <p>
+            创建 /etc/shells 文件
+          </p>
+        </li>
+        <li class="next">
+          <a accesskey="n" href="../chapter08/chapter08.html" title=
+          "让 LFS 系统可引导">下一页</a>
+          <p>
+            让 LFS 系统可引导
+          </p>
+        </li>
+        <li class="up">
+          <a accesskey="u" href="chapter07.html" title=
+          "第&nbsp;7&nbsp;章&nbsp;基本系统配置">上一级</a>
+        </li>
+        <li class="home">
+          <a accesskey="h" href="../index.html" title=
+          "Linux From Scratch 中文版 - Version 8.0-rc1-systemd">起始页</a>
+        </li>
+      </ul>
+    </div>
+    <div class="sect1" lang="zh" xml:lang="zh">
+      <h1 class="sect1">
+        <a id="ch-scripts-systemd-custom" name=
+        "ch-scripts-systemd-custom"></a>7.10. Systemd 的用法与配置
+      </h1>
+      <div class="sect2" lang="zh" xml:lang="zh">
+        <h2 class="sect2">
+          7.10.1. 基础配置
+        </h2>
+        <p>
+          <code class="filename">/etc/systemd/system.conf</code> 文件包含了大量的
+          systemd 控制命令。 假如未作任何的更改，文件中的所有行应该都是注释掉的，这代表了 systemd 正使用默认的运行方式。
+          这个文件中可以设置日志级别，可以修改日志的基本设置。所有设置项都可以在 man 手册的 <code class=
+          "filename">systemd-system.conf(5)</code> 中查看。
+        </p>
+      </div>
+      <div class="sect2" lang="zh" xml:lang="zh">
+        <h2 class="sect2">
+          7.10.2. 禁用启动时清屏
+        </h2>
+        <p>
+          默认情况下，systemd 将会在系统启动快要结束的时候清屏。如不需要，使用以下操作禁用：
+        </p>
+        <pre class="userinput">
+<kbd class="command">mkdir -pv /etc/systemd/system/getty@tty1.service.d
+
+cat &gt; /etc/systemd/system/getty@tty1.service.d/noclear.conf &lt;&lt; EOF
+<code class="literal">[Service]
+TTYVTDisallocate=no</code>
+EOF</kbd>
+</pre>
+        <p>
+          拥有 root 权限的账户总是可以通过 <strong class="userinput"><code>journalctl
+          -b</code></strong> 查看启动信息。
+        </p>
+      </div>
+      <div class="sect2" lang="zh" xml:lang="zh">
+        <h2 class="sect2">
+          7.10.3. 禁止 /tmp 使用 tmpfs
+        </h2>
+        <p>
+          默认情况下，<code class="filename">/tmp</code> 使用 tmpfs
+          文件系统。如不需要，使用以下操作禁用：
+        </p>
+        <pre class="userinput">
+<kbd class="command">ln -sfv /dev/null /etc/systemd/system/tmp.mount</kbd>
+</pre>
+        <p>
+          如果已经为 <code class="filename">/tmp</code> 在 <code class=
+          "filename">/etc/fstab</code> 中指定了专门的分区， 那么此操作是多余的。
+        </p>
+      </div>
+      <div class="sect2" lang="zh" xml:lang="zh">
+        <h2 class="sect2">
+          7.10.4. 配置自动创建和删除文件
+        </h2>
+        <p>
+          有这样几个服务可以建立或删除文件/目录：
+        </p>
+        <div class="itemizedlist">
+          <ul>
+            <li class="listitem">
+              <p>
+                systemd-tmpfiles-clean.service
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                systemd-tmpfiles-setup-dev.service
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                systemd-tmpfiles-setup.service
+              </p>
+            </li>
+          </ul>
+        </div>
+        <p>
+          系统配置文件在 <code class="filename">/usr/lib/tmpfiles.d/*.conf</code> 中。
+          本地配置文件在 <code class="filename">/etc/tmpfiles.d</code> 中。
+          <code class="filename">/etc/tmpfiles.d</code>中的文件会覆盖 <code class=
+          "filename">/usr/lib/tmpfiles.d</code> 中相同名称的文件。
+          （译者注：首先读取系统范围配置文件，再读取用户范围配置文件，用户范围配置文件会覆盖系统范围配置文件的相同部分。）可以在 man 手册的
+          <code class="filename">tmpfiles.d(5)</code> 中获取文件格式详情。
+        </p>
+      </div>
+      <div class="sect2" lang="zh" xml:lang="zh">
+        <h2 class="sect2">
+          7.10.5. 覆盖默认服务的行为
+        </h2>
+        <p>
+          The parameter of a unit can be overriden by creating a directory
+          and a configuration file in <code class=
+          "filename">/etc/systemd/system</code>. For example:
+        </p>
+        <pre class="userinput">
+<kbd class="command">mkdir -pv /etc/systemd/system/foobar.service.d
+
+cat &gt; /etc/systemd/system/foobar.service.d/foobar.conf &lt;&lt; EOF
+<code class="literal">[Service]
+Restart=always
+RestartSec=30</code>
+EOF</kbd>
+</pre>
+        <p>
+          可以在 man 手册的 <code class="filename">systemd.unit(5)</code>
+          中查询更多信息。创建好文件之后，请运行 <strong class="userinput"><code>systemctl
+          daemon-reload</code></strong> 和 <strong class=
+          "userinput"><code>systemctl restart foobar</code></strong> 激活所做更改。
+        </p>
+      </div>
+      <div class="sect2" lang="zh" xml:lang="zh">
+        <h2 class="sect2">
+          7.10.6. Debugging the Boot Sequence
+        </h2>
+        <p>
+          Rather than plain shell scripts used in SysVinit or BSD style init
+          systems, systemd uses a unified format for different types of
+          startup files (or units). The command <span class=
+          "command"><strong>systemctl</strong></span> is used to enable,
+          disable, controll state, and obtain status of unit files. Here are
+          some examples of frequently used commands:
+        </p>
+        <div class="itemizedlist">
+          <ul>
+            <li class="listitem">
+              <p>
+                <span class="command"><strong>systemctl list-units -t
+                <em class="replaceable"><code>&lt;service&gt;</code></em>
+                [--all]</strong></span>: lists loaded unit files of type
+                service.
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                <span class="command"><strong>systemctl list-units -t
+                <em class="replaceable"><code>&lt;target&gt;</code></em>
+                [--all]</strong></span>: lists loaded unit files of type
+                target.
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                <span class="command"><strong>systemctl show -p Wants
+                <em class=
+                "replaceable"><code>&lt;multi-user.target&gt;</code></em></strong></span>:
+                shows all units that depend on the multi-user target. Targets
+                are special unit files that are anogalous to runlevels under
+                SysVinit.
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                <span class="command"><strong>systemctl status <em class=
+                "replaceable"><code>&lt;servicename.service&gt;</code></em></strong></span>:
+                shows the status of the servicename service. The .service
+                extension can be omitted if there are no other unit files
+                with the same name, such as .socket files (which create a
+                listening socket that provides similar functionality to
+                inetd/xinetd).
+              </p>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="sect2" lang="zh" xml:lang="zh">
+        <h2 class="sect2">
+          7.10.7. Working with the Systemd Journal
+        </h2>
+        <p>
+          Logging on a system booted with systemd is handled with
+          systemd-journald (by default), rather than a typical unix syslog
+          daemon. You can also add a normal syslog daemon and have both work
+          side by side if desired. The systemd-journald program stores
+          journal entries in a binary format rather than a plain text log
+          file. To assist with parsing the file, the command <span class=
+          "command"><strong>journalctl</strong></span> is provided. Here are
+          some examples of frequently used commands:
+        </p>
+        <div class="itemizedlist">
+          <ul>
+            <li class="listitem">
+              <p>
+                <span class="command"><strong>journalctl -r</strong></span>:
+                shows all contents of the journal in reverse chronological
+                order.
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                <span class="command"><strong>journalctl -u <em class=
+                "replaceable"><code>UNIT</code></em></strong></span>: shows
+                the journal entries associated with the specified UNIT file.
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                <span class="command"><strong>journalctl -b[=ID]
+                -r</strong></span>: shows the journal entries since last
+                successfull boot (or for boot ID) in reverse chronological
+                order.
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                <span class="command"><strong>journalctl -f</strong></span>:
+                povides functionality similar to tail -f (follow).
+              </p>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="sect2" lang="zh" xml:lang="zh">
+        <h2 class="sect2">
+          7.10.8. Long Running Processes
+        </h2>
+        <p>
+          Beginning with systemd-230, all user processes are killed when a
+          user session is ended, even if nohup is used, or the process uses
+          <code class="function">daemon()</code> or <code class=
+          "function">setsid()</code>. This is a deliberate change from a
+          historically permissive environment to a more restrictive one. The
+          new behavior may cause issues if you depend on long running
+          programs (e.g., <span class=
+          "command"><strong>screen</strong></span> or <span class=
+          "command"><strong>tmux</strong></span>) to remain active after
+          ending your user session. There are three ways to enable lingering
+          processes to remain after a user session is ended.
+        </p>
+        <div class="itemizedlist">
+          <ul>
+            <li class="listitem">
+              <p>
+                <span class="emphasis"><em>Enable process lingering for only
+                needed users</em></span>: normal users have permission to
+                enable process lingering with the command <span class=
+                "command"><strong>loginctl enable-linger</strong></span> for
+                their own user. System administrators can use the same
+                command with a <em class="parameter"><code>user</code></em>
+                argument to enable for a user. That user can then use the
+                <span class="command"><strong>systemd-run</strong></span>
+                command to start long running processes. For example:
+                <span class="command"><strong>systemd-run --scope --user
+                /usr/bin/screen</strong></span>. If you enable lingering for
+                your user, the user@.service will remain even after all login
+                sessions are closed, and will automatically start at system
+                boot. This has the advantage of explicitly allowing and
+                disallowing processes to run after the user session has
+                ended, but breaks backwards compatibility with tools like
+                <span class="command"><strong>nohup</strong></span> and
+                utilities that use <code class="function">deamon()</code>.
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                <span class="emphasis"><em>Enable system-wide process
+                lingering</em></span>: you can set <em class=
+                "parameter"><code>KillUserProcesses=no</code></em> in
+                <code class="filename">/etc/logind.conf</code> to enable
+                process lingering globally for all users. This has the
+                benefit of leaving the old method available to all users at
+                the expense of explicit control.
+              </p>
+            </li>
+            <li class="listitem">
+              <p>
+                <span class="emphasis"><em>Disable at build-time</em></span>:
+                You can enable lingering by default while building systemd by
+                adding the switch <em class=
+                "parameter"><code>--without-kill-user-processes</code></em>
+                to the <span class=
+                "command"><strong>configure</strong></span> command for
+                systemd. This completely disables the ability of systemd to
+                kill user processes at session end.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="navfooter">
+      <ul>
+        <li class="prev">
+          <a accesskey="p" href="etcshells.html" title=
+          "创建 /etc/shells 文件">上一页</a>
+          <p>
+            创建 /etc/shells 文件
+          </p>
+        </li>
+        <li class="next">
+          <a accesskey="n" href="../chapter08/chapter08.html" title=
+          "让 LFS 系统可引导">下一页</a>
+          <p>
+            让 LFS 系统可引导
+          </p>
+        </li>
+        <li class="up">
+          <a accesskey="u" href="chapter07.html" title=
+          "第&nbsp;7&nbsp;章&nbsp;基本系统配置">上一级</a>
+        </li>
+        <li class="home">
+          <a accesskey="h" href="../index.html" title=
+          "Linux From Scratch 中文版 - Version 8.0-rc1-systemd">起始页</a>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
